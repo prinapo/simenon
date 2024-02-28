@@ -1,5 +1,6 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage"; // Import getStorage function for Firebase Storage
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -9,12 +10,12 @@ const firebaseConfig = {
   storageBucket: "simenon-db758.appspot.com",
   messagingSenderId: "55590854970",
   appId: "1:55590854970:web:fa5e3ae704c86a9eeeb003",
-  measurementId: "G-4HYC636X3K"
+  measurementId: "G-4HYC636X3K",
 };
 
 // Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
+const storage = getStorage(firebaseApp);
 
-export default firebaseApp;
-export { db };
+export { firebaseApp, db, storage };
