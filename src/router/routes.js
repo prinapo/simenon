@@ -12,6 +12,16 @@ const routes = [
         name: "DettaglioLibro",
         component: () => import("pages/DettaglioLibro.vue"),
       },
+
+      {
+        path: "/login",
+        name: "LoginPage",
+        component: () => import("pages/LoginPage.vue"),
+      },
+      {
+        path: "/home",
+        redirect: "/",
+      },
     ],
   },
 

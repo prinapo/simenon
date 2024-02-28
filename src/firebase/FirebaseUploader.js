@@ -28,9 +28,16 @@ export default createUploaderComponent({
       type: String,
       default: "/",
     },
+
+    //addedd by giovanni
+    bookId: {
+      type: String,
+      default: null,
+    },
   },
 
   emits: [
+    "uploaded",
     // ...your custom events name list
   ],
 
@@ -83,6 +90,13 @@ export default createUploaderComponent({
       });
     }
 
+    // [ GIOVANNI! ]
+    // set the extension of the file
+
+    function getFileExtension(filename) {
+      return filename.slice(((filename.lastIndexOf(".") - 1) >>> 0) + 2);
+    }
+
     // [ REQUIRED! ]
     // Start the uploading process
     function upload() {
@@ -95,19 +109,32 @@ export default createUploaderComponent({
         if (helpers.uploadedFiles.value.includes(fileToUpload)) return;
 
         //? 👇 This can be whatever you want ~ can use UUID to generate unique file names
-        const fileName = `${Date.now()}-${fileToUpload.name}`;
+        // ORIGINAL const fileName = `${Date.now()}-${fileToUpload.name}`;
+        //Giovanni
+        const fileName = `${props.bookId}.${getFileExtension(
+          fileToUpload.name
+        )}`;
+        // console.log(fileName);
+        // console.log(props.directory);
+
         const storageRef = firebaseRef(
           storage,
           `${props.directory}/${fileName}`
         );
+        // console.log(storageRef);
 
         const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
 
         uploadTaskList.value = [...uploadTaskList.value, uploadTask];
+        console.log(`Upload started for file: ${fileToUpload.name}`);
 
         uploadTask.on(
           "state_changed",
           (snapshot) => {
+            console.log(
+              `Upload progress for ${fileToUpload.name}: ${snapshot.bytesTransferred} bytes transferred`
+            );
+
             helpers.updateFileStatus(
               fileToUpload,
               "uploading",
@@ -154,6 +181,7 @@ export default createUploaderComponent({
             helpers.uploadedSize.value += bytesTransferred;
 
             uploadProgressList.value[i] = false;
+            console.log(`Upload completed for file: ${fileToUpload.name}`);
           }
         );
       });

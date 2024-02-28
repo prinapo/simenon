@@ -15,6 +15,27 @@
 
     <q-drawer v-model="leftDrawerOpen" side="left" overlay bordered>
       <!-- drawer content -->
+      <q-list>
+        <q-item clickable to="/home">
+          <q-item-section>
+            <q-item-label>Home</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="home" />
+          </q-item-section>
+        </q-item>
+
+        <q-separator />
+
+        <q-item clickable to="/login">
+          <q-item-section>
+            <q-item-label>Login</q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-icon name="account_circle" />
+          </q-item-section>
+        </q-item>
+      </q-list>
     </q-drawer>
 
     <q-page-container>
