@@ -1,90 +1,103 @@
 <template>
-  <div class="q-pa-md row items-start q-gutter-md">
-    <q-card inline class="card-container">
-      <q-card-section vertical>
-        <!-- Conditionally render q-img based on signedUrl -->
-        <q-card-section class="col-5 flex flex-center">
-          <q-img
-            v-if="book.signedUrl"
-            :src="book.signedUrl"
-            width="600px"
-            @click="openFileUploadDialog"
-            style="cursor: pointer"
-          />
+  <div class="q-pa-md card-container">
+    <!-- Q-Carousel for displaying images -->
+    <q-carousel animated v-model="slide" arrows navigation height="100%">
+      <q-carousel-slide :name="1">
+        <div class="custom-caption">
+          <div class="text-subtitle1">Front</div>
+        </div>
+        <q-img
+          v-if="book.signedUrl"
+          :src="book.signedUrl"
+          style="cursor: pointer"
+        />
+        <!-- Use placeholder URL if signedUrl is empty -->
+        <q-img v-else :src="placeholderUrl" style="cursor: pointer" />
+      </q-carousel-slide>
+      <q-carousel-slide :name="2">
+        <div class="custom-caption">
+          <div class="text-subtitle1">Back</div>
+        </div>
+        <q-img
+          v-if="book.signedUrlBck"
+          :src="book.signedUrlBck"
+          style="cursor: pointer"
+        />
+        <!-- Use placeholder URL if signedUrlBck is empty -->
+        <q-img v-else :src="placeholderUrl" style="cursor: pointer" />
+      </q-carousel-slide>
+    </q-carousel>
 
-          <!-- Use placeholder URL if signedUrl is empty -->
-          <q-img
-            v-else
-            src="placeholderUrl"
-            width="600px"
-            style="cursor: pointer"
-          />
+    <div class="-pa-md q-h-full q-flex q-justify-center q-items-start">
+      <q-card inline class="card-container">
+        <q-card-section vertical>
+          <q-expansion-item v-if="isLoggedIn" label="Upload Files">
+            <FirebaseUploader
+              :blocking="true"
+              :bookId="book.uniqueId"
+              @uploaded="handleFileUploaded"
+              :fileInputRef="fileInputRef"
+              :directory="'images'"
+              label="Upload files"
+              color="purple"
+              square
+              flat
+              bordered
+              style="max-width: 300px"
+            />
+          </q-expansion-item>
+
+          <q-card-section>
+            <h3>{{ book.titolo }}</h3>
+            <p>front: {{ book.signedUrl }}</p>
+            <p>back: {{ book.signedUrlBck }}</p>
+            <p>Editor: {{ book.editore }}</p>
+            <p>Editor: {{ book.editore }}</p>
+            <p>Raccolta: {{ book.raccolta }}</p>
+            <p>Confermato: {{ book.confermato }}</p>
+            <p>Second Edition Year: {{ book.ed_2Anno }}</p>
+            <p>First Edition Possessed: {{ book.ed_1Posseduta }}</p>
+            <p>Language: {{ book.lingua }}</p>
+            <p>Possessed: {{ book.posseduto }}</p>
+            <p>First Edition Year: {{ book.ed_1Anno }}</p>
+            <p>Collection Number: {{ book.numeroCollana }}</p>
+            <p>Publication Year: {{ book.annoPubblicazione }}</p>
+            <p>Edition: {{ book.edizione }}</p>
+            <p>Unique ID: {{ book.uniqueId }}</p>
+            <p>Collection: {{ book.collana }}</p>
+            <p>Original Title: {{ book.titoloOriginale }}</p>
+            <p>Book ID: {{ book.bookId }}</p>
+            <p>Timestamp: {{ book.timestamp }}</p>
+          </q-card-section>
+
+          <q-card-section>
+            <q-item
+              v-for="edizione in book.edizioni"
+              :key="edizione.id"
+              class="card"
+              clickable
+              v-ripple
+            >
+              <!-- Card content -->
+              <q-img
+                :src="edizione.signedUrl ? edizione.signedUrl : placeholderUrl"
+                width="120px"
+                fit="scale-down"
+              />
+              <q-item-section>
+                <q-item-label>Year: {{ edizione.anno }}</q-item-label>
+                <q-item-label>Edition: {{ edizione.edizione }}</q-item-label>
+                <q-item-label>Possessed: {{ edizione.posseduto }}</q-item-label>
+                <!-- You can add other fields here -->
+              </q-item-section>
+            </q-item>
+          </q-card-section>
         </q-card-section>
-
-        <q-expansion-item v-if="isLoggedIn" label="Upload Files">
-          <FirebaseUploader
-            :blocking="true"
-            :bookId="book.uniqueId"
-            @uploaded="handleFileUploaded"
-            :fileInputRef="fileInputRef"
-            :directory="'images'"
-            label="Upload files"
-            color="purple"
-            square
-            flat
-            bordered
-            style="max-width: 300px"
-          />
-        </q-expansion-item>
-
-        <q-card-section>
-          <h3>{{ book.titolo }}</h3>
-          <p>front: {{ book.signedUrl }}</p>
-          <p>back: {{ book.signedUrlBck }}</p>
-          <p>Editor: {{ book.editore }}</p>
-          <p>Editor: {{ book.editore }}</p>
-          <p>Raccolta: {{ book.raccolta }}</p>
-          <p>Confermato: {{ book.confermato }}</p>
-          <p>Second Edition Year: {{ book.ed_2Anno }}</p>
-          <p>First Edition Possessed: {{ book.ed_1Posseduta }}</p>
-          <p>Language: {{ book.lingua }}</p>
-          <p>Possessed: {{ book.posseduto }}</p>
-          <p>First Edition Year: {{ book.ed_1Anno }}</p>
-          <p>Collection Number: {{ book.numeroCollana }}</p>
-          <p>Publication Year: {{ book.annoPubblicazione }}</p>
-          <p>Edition: {{ book.edizione }}</p>
-          <p>Unique ID: {{ book.uniqueId }}</p>
-          <p>Collection: {{ book.collana }}</p>
-          <p>Original Title: {{ book.titoloOriginale }}</p>
-          <p>Book ID: {{ book.bookId }}</p>
-          <p>Timestamp: {{ book.timestamp }}</p>
-        </q-card-section>
-      </q-card-section>
-    </q-card>
+      </q-card>
+    </div>
   </div>
+
   <!-- List of books -->
-  <div class="cards">
-    <q-item
-      v-for="edizione in book.edizioni"
-      :key="edizione.id"
-      class="card"
-      clickable
-      v-ripple
-    >
-      <!-- Card content -->
-      <q-img
-        :src="edizione.signedUrl ? edizione.signedUrl : placeholderUrl"
-        width="120px"
-        fit="scale-down"
-      />
-      <q-item-section>
-        <q-item-label>Year: {{ edizione.anno }}</q-item-label>
-        <q-item-label>Edition: {{ edizione.edizione }}</q-item-label>
-        <q-item-label>Possessed: {{ edizione.posseduto }}</q-item-label>
-        <!-- You can add other fields here -->
-      </q-item-section>
-    </q-item>
-  </div>
 
   <!-- Use the FirebaseUploader component instead of input element -->
 </template>
@@ -105,6 +118,7 @@ const fileInputRef = ref(null);
 const placeholderUrl =
   "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/400x600.png?alt=media";
 const isLoggedIn = ref(false); // Initialize isLoggedIn as a reactive reference
+const slide = ref(1);
 
 function getFileExtension(filename) {
   return filename.slice(((filename.lastIndexOf(".") - 1) >>> 0) + 2);
@@ -189,7 +203,9 @@ html {
 body {
   padding: 1rem;
 }
-
+.card-container {
+  max-width: 600px; /* Limit container width to viewport width */
+}
 .card {
   background-color: dodgerblue;
   color: white;
@@ -202,5 +218,11 @@ body {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+.slide-image {
+  max-width: 600px !important;
+  height: auto; /* Ensure images maintain aspect ratio */
+  width: auto; /* Ensure images maintain aspect ratio */
+  max-height: 100%; /* Prevent images from exceeding parent height */
 }
 </style>
