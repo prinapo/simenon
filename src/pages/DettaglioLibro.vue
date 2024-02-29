@@ -38,10 +38,38 @@
         <q-img v-else :src="placeholderUrl" style="cursor: pointer" />
       </q-carousel-slide>
     </q-carousel>
-    <p>xxxxxxxxxxxxxxxxxx</p>
-    <p>{{ isLoggedIn }}</p>
+    <q-expansion-item>
+      <div class="q-pa-md">
+        <div class="q-gutter-sm row items-start">
+          <q-uploader
+            url="http://localhost:4444/upload"
+            color="teal"
+            flat
+            bordered
+            style="max-width: 300px"
+          />
 
-    xxxxx
+          <q-uploader
+            url="http://localhost:4444/upload"
+            label="Upload files"
+            color="purple"
+            square
+            flat
+            bordered
+            style="max-width: 300px"
+          />
+
+          <q-uploader
+            url="http://localhost:4444/upload"
+            label="No thumbnails"
+            color="amber"
+            text-color="black"
+            no-thumbnails
+            style="max-width: 300px"
+          />
+        </div>
+      </div>
+    </q-expansion-item>
     <!-- Display book details -->
     <div class="-pa-md q-h-full q-flex q-justify-center q-items-start">
       <q-card inline class="card-container">
@@ -50,17 +78,37 @@
           <q-list dense bordered padding class="rounded-borders">
             <q-item dense v-for="(detail, index) in bookDetails" :key="index">
               <q-item-section>
-                <p>{{ detail.label }} {{ detail.value }}</p>
+                <!-- Show input field if editable -->
+                <template v-if="detail.editable">
+                  <p>
+                    {{ detail.label }}
+                    <q-input v-model="detail.value" />
+                  </p>
+                </template>
+                <!-- Show label and editable field if not editable -->
+                <template v-else>
+                  <div>
+                    <p>{{ detail.label }} {{ detail.value }}</p>
+                  </div>
+                </template>
               </q-item-section>
-              <!-- Edit button -->
               <q-item-section side v-if="isLoggedIn">
-                <q-btn
-                  flat
-                  round
-                  icon="edit"
-                  @click="editDetail(detail)"
-                  class="q-ml-md"
-                />
+                <div class="button-container q-gutter-md">
+                  <q-btn
+                    flat
+                    round
+                    :icon="detail.editable ? 'close' : 'edit'"
+                    @click="toggleEdit(detail)"
+                  />
+                  <!-- Add close button if editable -->
+                  <q-btn
+                    flat
+                    round
+                    icon="save"
+                    v-if="detail.editable"
+                    @click="saveDetail(detail)"
+                  />
+                </div>
               </q-item-section>
             </q-item>
           </q-list>
@@ -73,7 +121,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { db } from "../firebase/firebaseInit";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useRoute } from "vue-router";
 
 import { useAuth } from "../composable/auth";
@@ -101,25 +149,49 @@ const fetchBookDetails = async () => {
       };
       // Populate bookDetails
       bookDetails.value = [
-        { label: "Title", value: book.value.titolo },
-        { label: "Front", value: book.value.signedUrl },
-        { label: "Back", value: book.value.signedUrlBck },
-        { label: "Editor", value: book.value.editore },
-        { label: "Raccolta", value: book.value.raccolta },
-        { label: "Confermato", value: book.value.confermato },
-        { label: "Second Edition Year", value: book.value.ed_2Anno },
-        { label: "First Edition Possessed", value: book.value.ed_1Posseduta },
-        { label: "Language", value: book.value.lingua },
-        { label: "Possessed", value: book.value.posseduto },
-        { label: "First Edition Year", value: book.value.ed_1Anno },
-        { label: "Collection Number", value: book.value.numeroCollana },
-        { label: "Publication Year", value: book.value.annoPubblicazione },
-        { label: "Edition", value: book.value.edizione },
-        { label: "Unique ID", value: book.value.uniqueId },
-        { label: "Collection", value: book.value.collana },
-        { label: "Original Title", value: book.value.titoloOriginale },
-        { label: "Book ID", value: book.value.bookId },
-        { label: "Timestamp", value: book.value.timestamp },
+        { id: "titolo", label: "Title", value: book.value.titolo },
+        { id: "signedUrl", label: "Front", value: book.value.signedUrl },
+        { id: "signedUrlBck", label: "Back", value: book.value.signedUrlBck },
+        { id: "editore", label: "Editor", value: book.value.editore },
+        { id: "raccolta", label: "Raccolta", value: book.value.raccolta },
+        { id: "confermato", label: "Confermato", value: book.value.confermato },
+        {
+          id: "ed_2Anno",
+          label: "Second Edition Year",
+          value: book.value.ed_2Anno,
+        },
+        {
+          id: "ed_1Posseduta",
+          label: "First Edition Possessed",
+          value: book.value.ed_1Posseduta,
+        },
+        { id: "lingua", label: "Language", value: book.value.lingua },
+        { id: "posseduto", label: "Possessed", value: book.value.posseduto },
+        {
+          id: "ed_1Anno",
+          label: "First Edition Year",
+          value: book.value.ed_1Anno,
+        },
+        {
+          id: "numeroCollana",
+          label: "Collection Number",
+          value: book.value.numeroCollana,
+        },
+        {
+          id: "annoPubblicazione",
+          label: "Publication Year",
+          value: book.value.annoPubblicazione,
+        },
+        { id: "edizione", label: "Edition", value: book.value.edizione },
+        { id: "uniqueId", label: "Unique ID", value: book.value.uniqueId },
+        { id: "collana", label: "Collection", value: book.value.collana },
+        {
+          id: "titoloOriginale",
+          label: "Original Title",
+          value: book.value.titoloOriginale,
+        },
+        { id: "bookId", label: "Book ID", value: book.value.bookId },
+        { id: "timestamp", label: "Timestamp", value: book.value.timestamp },
       ];
       console.log("Book details:", book.value); // Log book details
       console.log("Book details:", bookDetails.value); // Log bookDetails
@@ -131,6 +203,10 @@ const fetchBookDetails = async () => {
   }
 };
 
+const toggleEdit = (detail) => {
+  // Toggle the editable property of the detail object
+  detail.editable = !detail.editable;
+};
 // Define book details
 const bookDetails = ref([]);
 
@@ -138,6 +214,17 @@ const bookDetails = ref([]);
 const editDetail = (detail) => {
   // Handle edit action for the specific detail
   console.log("Edit detail:", detail);
+};
+
+const saveDetail = async (detail) => {
+  try {
+    const docRef = doc(db, "Bibliografia", route.params.id);
+    await updateDoc(docRef, { [detail.id]: detail.value });
+    detail.editable = false; // Set editable to false after saving
+    console.log("Detail saved successfully!");
+  } catch (error) {
+    console.error("Error saving detail:", error);
+  }
 };
 
 // Fetch book details on component mount
@@ -173,5 +260,9 @@ body {
   height: auto; /* Ensure images maintain aspect ratio */
   width: auto; /* Ensure images maintain aspect ratio */
   max-height: 100%; /* Prevent images from exceeding parent height */
+}
+.button-container {
+  display: flex;
+  align-items: center;
 }
 </style>
