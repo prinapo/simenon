@@ -1,12 +1,17 @@
 <template>
   <div>
-    <q-expansion-item label="Filters">
+    <q-expansion-item
+      label="Filters"
+      v-model="isExpansionOpen"
+      @update:model-value="toggleExpansion"
+    >
       <!-- Filter by Title -->
       <q-input
         v-model="searchQuery"
         outlined
         label="Filter by Title"
         dense
+        @update:model-value="updateSearchQuery"
       ></q-input>
 
       <!-- Filter by Editore -->
@@ -23,7 +28,7 @@
       <q-checkbox v-model="showFranceseBooks" label="Show Francese Books" />
     </q-expansion-item>
     <!-- Filter by Title -->
-
+    {{ isExpansionOpen }}
     <q-btn
       @click="clearFilters"
       label="Clear Filters"
@@ -54,6 +59,7 @@
           <q-item-section>
             <q-item-label lines="1">{{ book.titolo }}</q-item-label>
             <q-item-label caption>{{ book.editore }}</q-item-label>
+            <q-item-label caption>{{ book.collana }}</q-item-label>
           </q-item-section>
           <q-item-section side>
             <q-icon name="info" />
@@ -61,31 +67,69 @@
         </q-item>
       </router-link>
     </div>
+    <div class="button-container">
+      <q-btn
+        class="load-more-btn"
+        @click="loadMore"
+        label="Load More"
+        color="primary"
+        dense
+        v-if="!allItemsLoaded"
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeMount } from "vue";
 import { db } from "../firebase/firebaseInit";
-import { collection, getDocs, query, limit } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  limit,
+  startAfter,
+  orderBy,
+} from "firebase/firestore";
 import { useRouter } from "vue-router";
 
-const handleEditoreChange = (value) => {
-  selectedEditore.value = value;
-};
-
 const bibliografia = ref([]);
-const searchQuery = ref("");
-const selectedEditore = ref("");
-const showFranceseBooks = ref(false); // Checkbox state
+
 const router = useRouter();
-const editoriOptions = ref([]);
 const placeholderUrl =
   "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/400x600.png?alt=media";
+const batchSize = 100; // Number of items to fetch per batch
 
+import { useFiltersStore } from "../store/filtersStore";
+const filtersStore = useFiltersStore();
+
+const { searchQuery, selectedEditore, showFranceseBooks, editoriOptions } =
+  filtersStore;
+
+const updateSearchQuery = (value) => {
+  console.log("Search query updated:", value);
+
+  filtersStore.updateSearchQuery(value);
+};
+
+const handleEditoreChange = (value) => {
+  filtersStore.updateSelectedEditore(value);
+};
+
+const toggleExpansion = () => {
+  console.log("Expansion toggled:");
+  filtersStore.toggleExpansion();
+};
+const isExpansionOpen = computed(() => filtersStore.isExpansionOpen);
+
+// fine sezione per scrivere i valori dei filtri nello store
 const fetchBibliografia = async () => {
   try {
-    const q = query(collection(db, "Bibliografia"), limit(20));
+    const q = query(
+      collection(db, "Bibliografia"),
+      orderBy("titolo"),
+      limit(batchSize)
+    );
     const querySnapshot = await getDocs(q);
     bibliografia.value = querySnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -94,8 +138,9 @@ const fetchBibliografia = async () => {
       signedUrl: doc.data().signedUrl,
       posseduto: doc.data().posseduto,
       lingua: doc.data().lingua,
+      collana: doc.data().collana,
     }));
-    console.log("Fetched Bibliografia:", bibliografia.value); // Log fetched data
+    // console.log("Fetched Bibliografia:", bibliografia.value); // Log fetched data
   } catch (error) {
     console.error("Error fetching Bibliografia:", error);
   }
@@ -110,7 +155,7 @@ const fetchEditoriOptions = async () => {
       label: editore.editore,
       value: editore.editore,
     }));
-    console.log("Fetched Editori Options:", editoriOptions.value); // Log fetched options
+    //console.log("Fetched Editori Options:", editoriOptions.value); // Log fetched options
   } catch (error) {
     console.error("Error fetching Editori:", error);
   }
@@ -123,37 +168,69 @@ onMounted(() => {
 
 const filteredBibliografia = computed(() => {
   let filtered = bibliografia.value;
-  console.log("Selected Editore:", selectedEditore.value.value); // Log selected editore
-  if (searchQuery.value) {
+
+  // Retrieve the filter values from the Pinia store
+  const searchQueryValue = filtersStore.searchQuery;
+  const selectedEditoreValue = filtersStore.selectedEditore;
+  const showFranceseBooksValue = filtersStore.showFranceseBooks;
+
+  console.log("Selected Editore:", selectedEditoreValue);
+
+  if (searchQueryValue) {
     filtered = filtered.filter((book) =>
-      book.titolo.toLowerCase().includes(searchQuery.value.toLowerCase())
+      book.titolo.toLowerCase().includes(searchQueryValue.toLowerCase())
     );
   }
-  if (selectedEditore.value) {
-    console.log("Filtering by Editore:", selectedEditore.value.value); // Log filter by editore
-    filtered = filtered.filter(
-      (book) => book.editore === selectedEditore.value.value
-    );
+
+  if (selectedEditoreValue) {
+    filtered = filtered.filter((book) => book.editore === selectedEditoreValue);
   }
-  if (!showFranceseBooks.value) {
+
+  if (!showFranceseBooksValue) {
     filtered = filtered.filter((book) => book.lingua !== "Francese");
   }
-  console.log("Filtered Bibliografia:", filtered); // Log filtered data
+
   return filtered;
 });
 
-const openDettaglioLibro = () => {
+// Raed from Sotre and set here
+
+let lastDoc = null; // Keep track of the last document fetched
+const allItemsLoaded = false; // Ensure allItemsLoaded is defaulted to false
+
+const loadMore = async () => {
   try {
-    console.log("Opening DettaglioLibro with id = 123");
-    router.push({ name: "DettaglioLibro", params: { id: "123" } });
+    const q = query(
+      collection(db, "Bibliografia"),
+      orderBy("titolo"),
+      startAfter(lastDoc),
+      limit(batchSize)
+    );
+    const querySnapshot = await getDocs(q);
+    const newItems = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      titolo: doc.data().titolo,
+      editore: doc.data().editore,
+      signedUrl: doc.data().signedUrl,
+      posseduto: doc.data().posseduto,
+      lingua: doc.data().lingua,
+      collana: doc.data().collana,
+    }));
+    bibliografia.value = [...bibliografia.value, ...newItems];
+    lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1]; // Update lastDoc
+    // console.log("Loaded more items:", newItems); // Log newly loaded items
+    if (querySnapshot.docs.length < batchSize) {
+      allItemsLoaded.value = true;
+    }
   } catch (error) {
-    console.error("Error navigating to DettaglioLibro:", error);
+    console.error("Error loading more items:", error);
   }
 };
 
 const clearFilters = () => {
-  searchQuery.value = "";
-  selectedEditore.value = "";
+  filtersStore.updateSearchQuery("");
+  filtersStore.updateSelectedEditore("");
+  filtersStore.updateShowFranceseBooks(false);
 };
 </script>
 
@@ -178,5 +255,13 @@ body {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+.load-more-btn {
+  margin-top: 20px; /* Adjust the margin value as needed */
+}
+.button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px; /* Adjust the margin value as needed */
 }
 </style>

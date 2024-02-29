@@ -15,9 +15,11 @@
   "dependencies": {
     "@quasar/extras": "^1.16.4",
     "firebase": "^9.6.1",
+    "pinia": "^2.1.7",
     "quasar": "^2.8.0",
     "vue": "^3.4.18",
-    "vue-router": "^4.3.0"
+    "vue-router": "^4.3.0",
+    "vuex": "^4.1.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^5.7.0",

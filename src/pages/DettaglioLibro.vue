@@ -1,5 +1,12 @@
 <template>
   <div class="q-pa-md card-container">
+    <q-btn
+      class="back-button"
+      @click="$router.go(-1)"
+      label="Back"
+      color="primary"
+      dense
+    />
     <!-- Q-Carousel for displaying images -->
     <q-carousel animated v-model="slide" arrows navigation height="100%">
       <q-carousel-slide :name="1">
@@ -103,13 +110,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { db, storage, auth } from "../firebase/firebaseInit";
 import { addDoc, updateDoc, doc, getDoc } from "firebase/firestore";
 import { useRoute } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
-
 import FirebaseUploader from "../firebase/FirebaseUploader.js"; // Adjust the path as needed
+import { useStore } from "vuex";
+import { onBeforeMount } from "vue";
+import { useRouter } from "vue-router";
 
 const { upload } = FirebaseUploader;
 const route = useRoute();
@@ -119,6 +128,9 @@ const placeholderUrl =
   "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/400x600.png?alt=media";
 const isLoggedIn = ref(false); // Initialize isLoggedIn as a reactive reference
 const slide = ref(1);
+const searchQuery = ref(""); // Example: Define searchQuery as a ref with an initial value of ''
+const selectedEditore = ref(""); // Example: Define selectedEditore as a ref with an initial value of ''
+const showFranceseBooks = ref(false); // Checkbox state
 
 function getFileExtension(filename) {
   return filename.slice(((filename.lastIndexOf(".") - 1) >>> 0) + 2);
@@ -186,6 +198,18 @@ const fetchBookDetails = async () => {
 
 const handleAuthStateChanged = (user) => {
   isLoggedIn.value = !!user; // Update isLoggedIn based on whether user is logged in
+};
+
+const router = useRouter();
+
+// Load data based on filter state
+const loadData = () => {
+  // Implement your data fetching logic here using the filters from the Vuex store
+};
+
+// Handle back button click
+const handleBackButtonClick = () => {
+  router.go(-1); // Navigate back
 };
 
 onMounted(() => {
