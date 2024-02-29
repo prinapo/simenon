@@ -58,5 +58,6 @@ const logout = async () => {
 // Check if the user is already logged in when the component is mounted
 onAuthStateChanged(auth, (user) => {
   isLoggedIn.value = !!user; // Update the isLoggedIn variable based on the user's authentication state
+  console.log("User logged in:", isLoggedIn.value);
 });
 </script>
