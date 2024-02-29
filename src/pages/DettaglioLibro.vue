@@ -41,16 +41,13 @@
     <q-expansion-item>
       <div class="q-pa-md">
         <div class="q-gutter-sm row items-start">
-          <q-uploader
-            url="http://localhost:4444/upload"
-            color="teal"
-            flat
-            bordered
-            style="max-width: 300px"
-          />
-
-          <q-uploader
-            url="http://localhost:4444/upload"
+          <FirebaseUploader
+            :blocking="true"
+            extention=""
+            directory="images"
+            :bookId="route.params.id"
+            @uploaded="handleFileUploaded"
+            :fileInputRef="fileInputRef"
             label="Upload files"
             color="purple"
             square
@@ -58,13 +55,32 @@
             bordered
             style="max-width: 300px"
           />
-
-          <q-uploader
-            url="http://localhost:4444/upload"
-            label="No thumbnails"
-            color="amber"
-            text-color="black"
-            no-thumbnails
+          <FirebaseUploader
+            :blocking="true"
+            directory="images"
+            extention="Bck"
+            :bookId="route.params.id"
+            @uploaded="handleFileUploaded"
+            :fileInputRef="fileInputRef"
+            label="Upload files"
+            color="red"
+            square
+            flat
+            bordered
+            style="max-width: 300px"
+          />
+          <FirebaseUploader
+            :blocking="true"
+            directory="images"
+            extention="Brd"
+            :bookId="route.params.id"
+            @uploaded="handleFileUploaded"
+            :fileInputRef="fileInputRef"
+            label="Upload files"
+            color="bkue"
+            square
+            flat
+            bordered
             style="max-width: 300px"
           />
         </div>
@@ -133,6 +149,7 @@ const book = ref({});
 const placeholderUrl =
   "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/400x600.png?alt=media";
 const slide = ref(1); // Initialize slide reference
+const fileInputRef = ref(null);
 
 // Access route parameters
 const route = useRoute();
@@ -203,6 +220,9 @@ const fetchBookDetails = async () => {
   }
 };
 
+const handleFileUploaded = () => {
+  // empty
+};
 const toggleEdit = (detail) => {
   // Toggle the editable property of the detail object
   detail.editable = !detail.editable;

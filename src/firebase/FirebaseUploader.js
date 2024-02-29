@@ -34,6 +34,10 @@ export default createUploaderComponent({
       type: String,
       default: null,
     },
+    extention: {
+      type: String,
+      default: null,
+    },
   },
 
   emits: [
@@ -111,11 +115,12 @@ export default createUploaderComponent({
         //? 👇 This can be whatever you want ~ can use UUID to generate unique file names
         // ORIGINAL const fileName = `${Date.now()}-${fileToUpload.name}`;
         //Giovanni
-        const fileName = `${props.bookId}.${getFileExtension(
+        const fileName = `${props.bookId}${props.extention}.${getFileExtension(
           fileToUpload.name
         )}`;
-        // console.log(fileName);
-        // console.log(props.directory);
+        console.log(fileName);
+        console.log(props.bookId);
+        console.log(props.extention);
 
         const storageRef = firebaseRef(
           storage,
