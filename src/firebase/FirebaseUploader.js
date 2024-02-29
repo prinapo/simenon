@@ -68,7 +68,15 @@ export default createUploaderComponent({
             uploadedFiles &&
             uploadedFiles.value.length >= uploadProgressList.value.length
           ) {
-            emit("uploaded", uploadedFiles);
+            // Extract filename extensions from uploaded files
+            const filesWithExtensions = uploadedFiles.value.map((file) => {
+              const fileName = file.originalFile.name;
+              const fileExtension = getFileExtension(fileName);
+              return { ...file, fileExtension };
+            });
+
+            // Emit the "uploaded" event with files and their extensions
+            emit("uploaded", filesWithExtensions);
           }
         }
       },

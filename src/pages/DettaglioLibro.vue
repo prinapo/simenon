@@ -18,7 +18,7 @@
         </div>
         <q-img
           v-if="book.signedUrl"
-          :src="book.signedUrl"
+          :src="`${book.signedUrl}`"
           style="cursor: pointer"
         />
         <!-- Use placeholder URL if signedUrl is empty -->
@@ -31,7 +31,19 @@
         </div>
         <q-img
           v-if="book.signedUrlBck"
-          :src="book.signedUrlBck"
+          :src="`${book.signedUrlBck}`"
+          style="cursor: pointer"
+        />
+        <!-- Use placeholder URL if signedUrlBck is empty -->
+        <q-img v-else :src="placeholderUrl" style="cursor: pointer" />
+      </q-carousel-slide>
+      <q-carousel-slide :name="2">
+        <div class="custom-caption">
+          <div class="text-subtitle1">Back</div>
+        </div>
+        <q-img
+          v-if="book.signedUrlBrd"
+          :src="`${book.signedUrlBrd}`"
           style="cursor: pointer"
         />
         <!-- Use placeholder URL if signedUrlBck is empty -->
@@ -46,7 +58,7 @@
             extention=""
             directory="images"
             :bookId="route.params.id"
-            @uploaded="handleFileUploaded"
+            @uploaded="handleFileUploaded('', $event)"
             :fileInputRef="fileInputRef"
             label="Upload files"
             color="purple"
@@ -60,7 +72,7 @@
             directory="images"
             extention="Bck"
             :bookId="route.params.id"
-            @uploaded="handleFileUploaded"
+            @uploaded="handleFileUploaded('Bck', $event)"
             :fileInputRef="fileInputRef"
             label="Upload files"
             color="red"
@@ -74,7 +86,7 @@
             directory="images"
             extention="Brd"
             :bookId="route.params.id"
-            @uploaded="handleFileUploaded"
+            @uploaded="handleFileUploaded('Brd', $event)"
             :fileInputRef="fileInputRef"
             label="Upload files"
             color="bkue"
@@ -137,7 +149,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { db } from "../firebase/firebaseInit";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { useRoute } from "vue-router";
 
 import { useAuth } from "../composable/auth";
@@ -150,7 +162,7 @@ const placeholderUrl =
   "https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/400x600.png?alt=media";
 const slide = ref(1); // Initialize slide reference
 const fileInputRef = ref(null);
-
+const imageVersion = ref(0);
 // Access route parameters
 const route = useRoute();
 
@@ -220,9 +232,44 @@ const fetchBookDetails = async () => {
   }
 };
 
-const handleFileUploaded = () => {
-  // empty
+const handleFileUploaded = async (extension, files) => {
+  // Process each uploaded file
+  for (const file of files) {
+    // Access file details and extension
+    const fileName = file.originalFile.name;
+    const fileExtension = file.fileExtension;
+
+    // Construct the file URL based on the provided parameters
+    const detailId = `signedUrl${extension}`; // ID including the extension
+    const fileURL = `https://firebasestorage.googleapis.com/v0/b/simenon-db758.appspot.com/o/images%2F${route.params.id}${extension}.${fileExtension}?alt=media`;
+
+    // Call saveDetail function to save the file details
+    const detail = {
+      id: detailId,
+      value: fileURL,
+    };
+    await saveDetail(detail);
+
+    // Update bookDetails with the new URL
+    const updatedDetailIndex = bookDetails.value.findIndex(
+      (detail) => detail.id === detailId
+    );
+    if (updatedDetailIndex !== -1) {
+      bookDetails.value[updatedDetailIndex].value = fileURL;
+      console.log(
+        "Book details updated:",
+        detailId,
+        " ",
+        bookDetails.value[updatedDetailIndex].value,
+        "",
+        book.value.signedUrl
+      );
+    } else {
+      console.error("Detail 'signedUrl' not found in bookDetails.");
+    }
+  }
 };
+
 const toggleEdit = (detail) => {
   // Toggle the editable property of the detail object
   detail.editable = !detail.editable;
@@ -239,14 +286,16 @@ const editDetail = (detail) => {
 const saveDetail = async (detail) => {
   try {
     const docRef = doc(db, "Bibliografia", route.params.id);
-    await updateDoc(docRef, { [detail.id]: detail.value });
+
+    // Use "set with merge" operation to update the document
+    await setDoc(docRef, { [detail.id]: detail.value }, { merge: true });
+
     detail.editable = false; // Set editable to false after saving
     console.log("Detail saved successfully!");
   } catch (error) {
     console.error("Error saving detail:", error);
   }
 };
-
 // Fetch book details on component mount
 onMounted(fetchBookDetails);
 </script>
